@@ -54,6 +54,7 @@ final class GenerationConfig implements Arrayable
         public readonly ?bool $enableEnhancedCivicAnswers = null,
         public readonly ?SpeechConfig $speechConfig = null,
         public readonly ?ThinkingConfig $thinkingConfig = null,
+        public readonly ?ImageConfig $imageConfig = null,
         public readonly ?MediaResolution $mediaResolution = null,
     ) {}
 
@@ -81,6 +82,7 @@ final class GenerationConfig implements Arrayable
                 'enableEnhancedCivicAnswers' => $this->enableEnhancedCivicAnswers,
                 'speechConfig' => $this->speechConfig?->toArray(),
                 'thinkingConfig' => $this->thinkingConfig?->toArray(),
+                'imageConfig' => $this->imageConfig?->toArray(),
                 'mediaResolution' => $this->mediaResolution?->value,
             ]
         );
