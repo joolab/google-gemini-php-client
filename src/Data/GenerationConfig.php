@@ -35,6 +35,7 @@ final class GenerationConfig implements Arrayable
      * @param  SpeechConfig|null  $speechConfig  Optional. The speech generation config.
      * @param  ThinkingConfig|null  $thinkingConfig  Optional. Config for thinking features. An error will be returned if this field is set for models that don't support thinking.
      * @param  MediaResolution|null  $mediaResolution  Optional. If specified, the media resolution specified will be used.
+     * @param  ImageConfig|null  $imageConfig  Optional. Config for image generation features.
      */
     public function __construct(
         public readonly int $candidateCount = 1,
@@ -54,8 +55,8 @@ final class GenerationConfig implements Arrayable
         public readonly ?bool $enableEnhancedCivicAnswers = null,
         public readonly ?SpeechConfig $speechConfig = null,
         public readonly ?ThinkingConfig $thinkingConfig = null,
-        public readonly ?ImageConfig $imageConfig = null,
         public readonly ?MediaResolution $mediaResolution = null,
+        public readonly ?ImageConfig $imageConfig = null,
     ) {}
 
     public function toArray(): array
@@ -82,8 +83,8 @@ final class GenerationConfig implements Arrayable
                 'enableEnhancedCivicAnswers' => $this->enableEnhancedCivicAnswers,
                 'speechConfig' => $this->speechConfig?->toArray(),
                 'thinkingConfig' => $this->thinkingConfig?->toArray(),
-                'imageConfig' => $this->imageConfig?->toArray(),
                 'mediaResolution' => $this->mediaResolution?->value,
+                'imageConfig' => $this->imageConfig?->toArray(),
             ]
         );
     }

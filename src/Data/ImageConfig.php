@@ -6,15 +6,21 @@ namespace Gemini\Data;
 
 use Gemini\Contracts\Arrayable;
 
+/**
+ * Config for image generation features.
+ *
+ * https://ai.google.dev/api/generate-content#ImageConfig
+ */
 final class ImageConfig implements Arrayable
 {
     public function __construct(
         public readonly ?string $aspectRatio,
         public readonly ?string $imageSize,
-    ) {}
+    ) {
+    }
 
     /**
-     * @param  array{aspectRatio?: string}  $attributes
+     * @param array{aspectRatio?: string, imageSize?: string} $attributes
      */
     public static function from(array $attributes): self
     {
