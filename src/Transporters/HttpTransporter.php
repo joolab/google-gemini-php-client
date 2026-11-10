@@ -11,10 +11,11 @@ use Gemini\Exceptions\TransporterException;
 use Gemini\Exceptions\UnserializableResponse;
 use Gemini\Foundation\Request;
 use Gemini\Transporters\DTOs\ResponseDTO;
-use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Exception\BadResponseException;
 use JsonException;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
 final class HttpTransporter implements TransporterContract
@@ -24,7 +25,7 @@ final class HttpTransporter implements TransporterContract
      *
      * @param  array<string, string>  $headers
      * @param  array<string, string|int>  $queryParams
-     * @param  Closure(\Psr\Http\Message\RequestInterface): ResponseInterface  $streamHandler
+     * @param  Closure(RequestInterface): ResponseInterface  $streamHandler
      */
     public function __construct(
         private readonly ClientInterface $client,
@@ -81,8 +82,8 @@ final class HttpTransporter implements TransporterContract
         try {
             return $callable();
         } catch (ClientExceptionInterface $clientException) {
-            if ($clientException instanceof ClientException) {
-                $this->throwIfJsonError($clientException->getResponse(), $clientException->getResponse()->getBody()->getContents());
+            if ($clientException instanceof BadResponseException) {
+                $this->throwIfJsonError(response: $clientException->getResponse(), contents: $clientException->getResponse());
             }
 
             throw new TransporterException($clientException);
@@ -100,15 +101,22 @@ final class HttpTransporter implements TransporterContract
         }
 
         if ($contents instanceof ResponseInterface) {
-            $contents = $contents->getBody()->getContents();
+            $body = $contents->getBody();
+            $contents = $body->getContents();
+
+            if ($body->isSeekable()) {
+                $body->rewind();
+            }
         }
 
         try {
-            /** @var array{error?: array{code: int, message: string, status: string } } $response */
+            /** @var array{error?: array{code: int, message: string, status: string }, 0?: array{error?: array{code: int, message: string, status: string } } } $response */
             $response = json_decode(json: $contents, associative: true, flags: JSON_THROW_ON_ERROR);
 
-            if (isset($response['error'])) {
-                throw new ErrorException($response['error']);
+            $error = $response['error'] ?? $response[0]['error'] ?? null;
+
+            if ($error !== null) {
+                throw new ErrorException($error);
             }
         } catch (JsonException $jsonException) {
             throw new UnserializableResponse($jsonException);

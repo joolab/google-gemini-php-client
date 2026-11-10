@@ -2,11 +2,13 @@
 
 use Gemini\Enums\Method;
 use Gemini\Enums\MimeType;
+use Gemini\Requests\FileSearchStores\UploadRequest;
 use Gemini\Responses\FileSearchStores\Documents\DocumentResponse;
 use Gemini\Responses\FileSearchStores\Documents\ListResponse as DocumentListResponse;
 use Gemini\Responses\FileSearchStores\FileSearchStoreResponse;
 use Gemini\Responses\FileSearchStores\ListResponse;
 use Gemini\Responses\FileSearchStores\UploadResponse;
+use Gemini\Transporters\DTOs\ResponseDTO;
 
 test('create', function () {
     $client = mockClient(
@@ -58,7 +60,7 @@ test('delete', function () {
     $client = mockClient(
         method: Method::DELETE,
         endpoint: 'fileSearchStores/123-456',
-        response: new \Gemini\Transporters\DTOs\ResponseDTO([])
+        response: new ResponseDTO([])
     );
 
     $client->fileSearchStores()->delete('fileSearchStores/123-456');
@@ -71,7 +73,7 @@ test('delete with force', function () {
     $client = mockClient(
         method: Method::DELETE,
         endpoint: 'fileSearchStores/123-456',
-        response: new \Gemini\Transporters\DTOs\ResponseDTO([]),
+        response: new ResponseDTO([]),
         params: ['force' => 'true'],
         validateParams: true
     );
@@ -129,6 +131,99 @@ describe('upload', function () {
             ->toBeInstanceOf(UploadResponse::class)
             ->name->toBe('operations/123-456');
     });
+
+    test('upload request body contains custom metadata', function () {
+        $request = new UploadRequest('fileSearchStores/123', $this->tmpFilepath, 'Display', MimeType::TEXT_PLAIN, [
+            'key_string' => 'value',
+            'key_int' => 123,
+            'key_float' => 1.5,
+            'key_list' => ['a', 2],
+        ]);
+
+        $body = (string) $request->toRequest(baseUrl: 'https://generativelanguage.googleapis.com/v1beta/')->getBody();
+
+        expect($body)->toContain(json_encode([
+            'displayName' => 'Display',
+            'mimeType' => 'text/plain',
+            'customMetadata' => [
+                ['key' => 'key_string', 'stringValue' => 'value'],
+                ['key' => 'key_int', 'numericValue' => 123],
+                ['key' => 'key_float', 'numericValue' => 1.5],
+                ['key' => 'key_list', 'stringListValue' => ['values' => ['a', '2']]],
+            ],
+        ]));
+    });
+});
+
+test('import file', function () {
+    $client = mockClient(
+        method: Method::POST,
+        endpoint: 'fileSearchStores/123:importFile',
+        response: UploadResponse::fake(),
+        params: [
+            'fileName' => 'files/abc-123',
+            'customMetadata' => [
+                ['key' => 'author', 'stringValue' => 'Jane'],
+                ['key' => 'year', 'numericValue' => 2026],
+            ],
+        ],
+        validateParams: true
+    );
+
+    $result = $client->fileSearchStores()->importFile('fileSearchStores/123', 'files/abc-123', ['author' => 'Jane', 'year' => 2026]);
+
+    expect($result)
+        ->toBeInstanceOf(UploadResponse::class)
+        ->name->toBe('operations/123-456');
+});
+
+test('import file without custom metadata', function () {
+    $client = mockClient(
+        method: Method::POST,
+        endpoint: 'fileSearchStores/123:importFile',
+        response: UploadResponse::fake(),
+        params: ['fileName' => 'files/abc-123'],
+        validateParams: true
+    );
+
+    expect($client->fileSearchStores()->importFile('fileSearchStores/123', 'files/abc-123'))
+        ->toBeInstanceOf(UploadResponse::class);
+});
+
+test('import file with a keyed string list', function () {
+    $client = mockClient(
+        method: Method::POST,
+        endpoint: 'fileSearchStores/123:importFile',
+        response: UploadResponse::fake(),
+        params: [
+            'fileName' => 'files/abc-123',
+            'customMetadata' => [
+                ['key' => 'tags', 'stringListValue' => ['values' => ['a', 'b']]],
+            ],
+        ],
+        validateParams: true
+    );
+
+    expect($client->fileSearchStores()->importFile('fileSearchStores/123', 'files/abc-123', ['tags' => ['x' => 'a', 'y' => 'b']]))
+        ->toBeInstanceOf(UploadResponse::class);
+});
+
+test('get operation', function () {
+    $client = mockClient(
+        method: Method::GET,
+        endpoint: 'fileSearchStores/123/upload/operations/456',
+        response: new ResponseDTO([
+            'name' => 'fileSearchStores/123/upload/operations/456',
+            'done' => true,
+            'response' => ['documentName' => 'fileSearchStores/123/documents/789'],
+        ]),
+    );
+
+    expect($client->fileSearchStores()->getOperation('fileSearchStores/123/upload/operations/456'))
+        ->toBeInstanceOf(UploadResponse::class)
+        ->name->toBe('fileSearchStores/123/upload/operations/456')
+        ->done->toBeTrue()
+        ->response->toBe(['documentName' => 'fileSearchStores/123/documents/789']);
 });
 
 test('list documents', function () {
@@ -164,7 +259,7 @@ test('delete document', function () {
     $client = mockClient(
         method: Method::DELETE,
         endpoint: 'fileSearchStores/123/documents/abc',
-        response: new \Gemini\Transporters\DTOs\ResponseDTO([])
+        response: new ResponseDTO([])
     );
 
     $client->fileSearchStores()->deleteDocument('fileSearchStores/123/documents/abc');
@@ -176,7 +271,7 @@ test('delete document with force', function () {
     $client = mockClient(
         method: Method::DELETE,
         endpoint: 'fileSearchStores/123/documents/abc',
-        response: new \Gemini\Transporters\DTOs\ResponseDTO([]),
+        response: new ResponseDTO([]),
         params: ['force' => 'true'],
         validateParams: true
     );
