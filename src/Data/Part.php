@@ -42,7 +42,7 @@ final class Part implements Arrayable
         public readonly ?PartMediaResolution $mediaResolution = null,
         public readonly ?ToolCall $toolCall = null,
         public readonly ?ToolResponse $toolResponse = null,
-        public readonly ?array $annotations = null
+        public readonly ?array $customData = null
     ) {}
 
     /**
@@ -63,7 +63,7 @@ final class Part implements Arrayable
             mediaResolution: isset($attributes['mediaResolution']) ? PartMediaResolution::from($attributes['mediaResolution']) : null,
             toolCall: isset($attributes['toolCall']) ? ToolCall::from($attributes['toolCall']) : null,
             toolResponse: isset($attributes['toolResponse']) ? ToolResponse::from($attributes['toolResponse']) : null,
-            annotations: $attributes['annotations'] ?? null,
+            customData: $attributes['customData'] ?? null,
         );
     }
 
@@ -119,8 +119,8 @@ final class Part implements Arrayable
             $data['toolResponse'] = $this->toolResponse->toArray();
         }
 
-        if ($this->annotations !== null) {
-            $data['annotations'] = $this->annotations;
+        if ($this->customData !== null) {
+            $data = [...$data, ...$this->customData];
         }
 
         return $data;
